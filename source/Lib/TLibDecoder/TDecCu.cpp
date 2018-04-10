@@ -263,8 +263,6 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
     setIsChromaQpAdjCoded(true);
   }
 
-  // Log this CU
-  pcPic->incrementCuCodingModeCount( TComPic::CU_CODING_MODE::ANY, uiDepth );
 
   if (pps.getTransquantBypassEnabledFlag())
   {
@@ -274,7 +272,7 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
   // Track lossless coded CUs
   if ( pcCU->isLosslessCoded(uiAbsPartIdx) )
   {
-    pcPic->incrementCuCodingModeCount( TComPic::CU_CODING_MODE::TQ_BYPASS, uiDepth );
+    pcPic->incrementCuCodingModeCount( TComPic::CU_CODING_MODE::LOSSLESS, uiDepth );
   }
 
   // decode CU mode and the partition size

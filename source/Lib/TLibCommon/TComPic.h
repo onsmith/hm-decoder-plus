@@ -63,12 +63,11 @@ public:
   // CU coding modes
   static const UInt NUM_CU_CODING_MODES = 5;
   static enum class CU_CODING_MODE {
-    ANY,
     INTER,
     INTRA,
     IPCM,
     SKIP,
-    TQ_BYPASS,
+    LOSSLESS,
   };
 
 private:
