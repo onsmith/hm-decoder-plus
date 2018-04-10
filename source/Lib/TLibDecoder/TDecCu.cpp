@@ -263,9 +263,18 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
     setIsChromaQpAdjCoded(true);
   }
 
+  // Log this CU
+  pcPic->incrementCuCodingModeCount( TComPic::CU_CODING_MODE::ANY, uiDepth );
+
   if (pps.getTransquantBypassEnabledFlag())
   {
     m_pcEntropyDecoder->decodeCUTransquantBypassFlag( pcCU, uiAbsPartIdx, uiDepth );
+  }
+
+  // Log lossless coded CUs
+  if ( pcCU->isLosslessCoded(uiAbsPartIdx) )
+  {
+    pcPic->incrementCuCodingModeCount( TComPic::CU_CODING_MODE::TQ_BYPASS, uiDepth );
   }
 
   // decode CU mode and the partition size
@@ -274,6 +283,11 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
     m_pcEntropyDecoder->decodeSkipFlag( pcCU, uiAbsPartIdx, uiDepth );
   }
 
+  // Log skip coded CUs
+  if ( pcCU->isSkipped(uiAbsPartIdx) )
+  {
+    pcPic->incrementCuCodingModeCount( TComPic::CU_CODING_MODE::SKIP, uiDepth );
+  }
 
   if( pcCU->isSkipped(uiAbsPartIdx) )
   {
@@ -320,9 +334,27 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
   m_pcEntropyDecoder->decodePredMode( pcCU, uiAbsPartIdx, uiDepth );
   m_pcEntropyDecoder->decodePartSize( pcCU, uiAbsPartIdx, uiDepth );
 
+  // Log intra coded CUs
+  if ( pcCU->isIntra( uiAbsPartIdx ) )
+  {
+    pcPic->incrementCuCodingModeCount( TComPic::CU_CODING_MODE::INTRA, uiDepth );
+  }
+
+  // Log inter coded CUs
+  if ( pcCU->isInter( uiAbsPartIdx ) )
+  {
+    pcPic->incrementCuCodingModeCount( TComPic::CU_CODING_MODE::INTER, uiDepth );
+  }
+
   if (pcCU->isIntra( uiAbsPartIdx ) && pcCU->getPartitionSize( uiAbsPartIdx ) == SIZE_2Nx2N )
   {
     m_pcEntropyDecoder->decodeIPCMInfo( pcCU, uiAbsPartIdx, uiDepth );
+
+    // Log IPCM coded CUs
+    if ( pcCU->getIPCMFlag(uiAbsPartIdx) )
+    {
+      pcPic->incrementCuCodingModeCount( TComPic::CU_CODING_MODE::IPCM, uiDepth );
+    }
 
     if(pcCU->getIPCMFlag(uiAbsPartIdx))
     {

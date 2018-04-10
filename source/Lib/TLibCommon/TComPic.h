@@ -60,6 +60,17 @@ public:
      // TRUE_ORG is the input file without any pre-encoder colour space conversion (but with possible bit depth increment)
   TComPicYuv*   getPicYuvTrueOrg()        { return  m_apcPicYuv[PIC_YUV_TRUE_ORG]; }
 
+  // CU coding modes
+  static const UInt NUM_CU_CODING_MODES = 5;
+  static enum class CU_CODING_MODE {
+    ANY,
+    INTER,
+    INTRA,
+    IPCM,
+    SKIP,
+    TQ_BYPASS,
+  };
+
 private:
   UInt                  m_uiTLayer;               //  Temporal layer
   Bool                  m_bUsedByCurr;            //  Used by current picture
@@ -76,6 +87,14 @@ private:
 
   Bool                  m_isTop;
   Bool                  m_isField;
+
+  // 2D array to count CU coding modes, where dimensions are as follows:
+  //   m_cuCodingModes[coding mode][cu depth]
+  UInt *m_cuCodingModes[NUM_CU_CODING_MODES];
+
+  // Create and destroy methods for m_cuCodingModes array
+  Void createCuCodingModesArray(UInt maxDepth);
+  Void destroyCuCodingModesArray();
 
   std::vector<std::vector<TComDataCU*> > m_vSliceCUDataLink;
 
@@ -157,6 +176,9 @@ public:
   Bool          getSAOMergeAvailability(Int currAddr, Int mergeAddr);
 
   UInt          getSubstreamForCtuAddr(const UInt ctuAddr, const Bool bAddressInRaster, TComSlice *pcSlice);
+
+  /* Update CU mode counting statistics for this TComPic */
+  Void          incrementCuCodingModeCount(CU_CODING_MODE mode, UInt depth);
 
   /* field coding parameters*/
 

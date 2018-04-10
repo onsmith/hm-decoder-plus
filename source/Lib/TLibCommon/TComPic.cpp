@@ -82,6 +82,8 @@ Void TComPic::create( const TComSPS &sps, const TComPPS &pps, const Bool bIsVirt
   const UInt         uiMaxCuHeight   = sps.getMaxCUHeight();
   const UInt         uiMaxDepth      = sps.getMaxTotalCUDepth();
 
+  createCuCodingModesArray(uiMaxDepth);
+
 #if REDUCED_ENCODER_MEMORY
   m_picSym.create( sps, pps, uiMaxDepth, bCreateForImmediateReconstruction );
   if (bCreateEncoderSourcePicYuv)
@@ -200,6 +202,8 @@ Void TComPic::destroy()
     }
   }
 
+  destroyCuCodingModesArray();
+
   deleteSEIs(m_SEIs);
 }
 
@@ -255,6 +259,33 @@ UInt TComPic::getSubstreamForCtuAddr(const UInt ctuAddr, const Bool bAddressInRa
     subStrm = 0;
   }
   return subStrm;
+}
+
+Void TComPic::createCuCodingModesArray(UInt maxDepth)
+{
+  for ( int i = 0; i < NUM_CU_CODING_MODES; i++ )
+  {
+    m_cuCodingModes[i] = new UInt[maxDepth];
+
+    for ( int j = 0; j < maxDepth; j++ )
+    {
+      m_cuCodingModes[i][j] = 0;
+    }
+  }
+}
+
+Void TComPic::destroyCuCodingModesArray()
+{
+  for ( int i = 0; i < NUM_CU_CODING_MODES; i++ )
+  {
+    delete m_cuCodingModes[i];
+  }
+}
+
+
+Void TComPic::incrementCuCodingModeCount(CU_CODING_MODE mode, UInt depth)
+{
+  m_cuCodingModes[static_cast<int>(mode)][depth]++;
 }
 
 
