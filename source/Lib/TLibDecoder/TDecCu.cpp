@@ -263,6 +263,8 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
     setIsChromaQpAdjCoded(true);
   }
 
+  // Log this CU
+  pcPic->incrementCuCodingModeCount( TComPic::CU_CODING_MODE::ANY, uiDepth );
 
   if (pps.getTransquantBypassEnabledFlag())
   {
