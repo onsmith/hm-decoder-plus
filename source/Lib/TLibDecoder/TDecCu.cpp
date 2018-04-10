@@ -271,7 +271,7 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
     m_pcEntropyDecoder->decodeCUTransquantBypassFlag( pcCU, uiAbsPartIdx, uiDepth );
   }
 
-  // Log lossless coded CUs
+  // Track lossless coded CUs
   if ( pcCU->isLosslessCoded(uiAbsPartIdx) )
   {
     pcPic->incrementCuCodingModeCount( TComPic::CU_CODING_MODE::TQ_BYPASS, uiDepth );
@@ -283,7 +283,7 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
     m_pcEntropyDecoder->decodeSkipFlag( pcCU, uiAbsPartIdx, uiDepth );
   }
 
-  // Log skip coded CUs
+  // Track skip coded CUs
   if ( pcCU->isSkipped(uiAbsPartIdx) )
   {
     pcPic->incrementCuCodingModeCount( TComPic::CU_CODING_MODE::SKIP, uiDepth );
@@ -334,13 +334,13 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
   m_pcEntropyDecoder->decodePredMode( pcCU, uiAbsPartIdx, uiDepth );
   m_pcEntropyDecoder->decodePartSize( pcCU, uiAbsPartIdx, uiDepth );
 
-  // Log intra coded CUs
+  // Track intra coded CUs
   if ( pcCU->isIntra( uiAbsPartIdx ) )
   {
     pcPic->incrementCuCodingModeCount( TComPic::CU_CODING_MODE::INTRA, uiDepth );
   }
 
-  // Log inter coded CUs
+  // Track inter coded CUs
   if ( pcCU->isInter( uiAbsPartIdx ) )
   {
     pcPic->incrementCuCodingModeCount( TComPic::CU_CODING_MODE::INTER, uiDepth );
@@ -350,7 +350,7 @@ Void TDecCu::xDecodeCU( TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UI
   {
     m_pcEntropyDecoder->decodeIPCMInfo( pcCU, uiAbsPartIdx, uiDepth );
 
-    // Log IPCM coded CUs
+    // Track IPCM coded CUs
     if ( pcCU->getIPCMFlag(uiAbsPartIdx) )
     {
       pcPic->incrementCuCodingModeCount( TComPic::CU_CODING_MODE::IPCM, uiDepth );
