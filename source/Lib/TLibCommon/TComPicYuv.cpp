@@ -332,40 +332,4 @@ Void TComPicYuv::dump (const std::string &fileName, const BitDepths &bitDepths, 
   fclose(pFile);
 }
 
-
-
-
-
-
-Void drawPartBorder( const UChar * const borderColor, const UInt uiPartIdx, const UInt uiPartDepth )
-{
-  for ( Int comp = 0; comp < getNumberValidComponents(); comp++ )
-  {
-    const  Int iWidth   = getWidth( comp )  >> uiPartDepth;
-    const  Int iHeight  = getHeight( comp ) >> uiPartDepth;
-    const UInt uiStride = getStride( comp );
-          Pel* pAddr    = getAddr( comp, uiPartIdx, iWidth );
-    
-    for ( Int x = 0; x < iWidth; x++ )
-    {
-      pAddr[x] = borderColor[comp];
-    }
-
-    pAddr += uiStride;
-
-    for ( Int y = 0; y < iHeight-2; y++ )
-    {
-      pAddr[0]        = borderColor[comp];
-      pAddr[iWidth-1] = borderColor[comp];
-
-      pAddr += uiStride;
-    }
-
-    for ( Int x = 0; x < iWidth; x++ )
-    {
-      pAddr[x] = borderColor[comp];
-    }
-  }
-}
-
 //! \}

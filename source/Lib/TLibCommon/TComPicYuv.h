@@ -168,9 +168,6 @@ public:
 
   // Set border extension flag
   Void          setBorderExtension(Bool b) { m_bIsBorderExtended = b; }
-
-  // Draw a colored border around a specific coding unit (CU) or partition unit (PU)
-  Void          drawPartBorder    ( const UChar * const borderColor, const UInt uiCtuRsAddr, const UInt uiPartIdx, const UInt uiPartDepth );
 };// END CLASS DEFINITION TComPicYuv
 
 
