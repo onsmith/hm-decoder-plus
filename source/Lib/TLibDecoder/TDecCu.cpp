@@ -863,4 +863,73 @@ Void TDecCu::xFillPCMBuffer(TComDataCU* pCU, UInt depth)
   }
 }
 
+
+/**
+ * Recursively draw a border around every CU within a CTU. Choose border colors
+ *   based on coding mode.
+ * @param pCtu          The CTU to recurse through
+ * @param uiAbsPartIdx  The absolute, z-order index of the top-left
+ *                        minimum-sized partition (usually 4x4 pixels in size)
+ *                        appearing in the current CU
+ * @param uiDepth       The current CU depth for recursion
+ */
+Void TDecCu::xDecompressCU( TComDataCU* pCtu, UInt uiAbsPartIdx,  UInt uiDepth )
+{
+        TComPic*  pcPic = pCtu->getPic();
+  const TComSPS  &sps   = *(pCtu->getSlice()->getSPS());
+
+  Bool bBoundary = false;
+  UInt uiLPelX   = pCtu->getCUPelX() + g_auiRasterToPelX[ g_auiZscanToRaster[uiAbsPartIdx] ];
+  UInt uiRPelX   = uiLPelX + (sps.getMaxCUWidth() >> uiDepth)  - 1;
+  UInt uiTPelY   = pCtu->getCUPelY() + g_auiRasterToPelY[ g_auiZscanToRaster[uiAbsPartIdx] ];
+  UInt uiBPelY   = uiTPelY + (sps.getMaxCUHeight() >> uiDepth) - 1;
+
+  Bool bBoundary = ( uiRPelX >= sps.getPicWidthInLumaSamples() || uiBPelY >= sps.getPicHeightInLumaSamples() );
+
+  if( uiDepth < pCtu->getDepth( uiAbsPartIdx ) && uiDepth < sps.getLog2DiffMaxMinCodingBlockSize() || bBoundary )
+  {
+    UInt uiNextDepth = uiDepth + 1;
+    UInt uiQNumParts = pCtu->getTotalNumPart() >> (uiNextDepth<<1);
+    UInt uiIdx = uiAbsPartIdx;
+    for ( UInt uiPartIdx = 0; uiPartIdx < 4; uiPartIdx++ )
+    {
+      uiLPelX = pCtu->getCUPelX() + g_auiRasterToPelX[ g_auiZscanToRaster[uiIdx] ];
+      uiTPelY = pCtu->getCUPelY() + g_auiRasterToPelY[ g_auiZscanToRaster[uiIdx] ];
+
+      if( ( uiLPelX < sps.getPicWidthInLumaSamples() ) && ( uiTPelY < sps.getPicHeightInLumaSamples() ) )
+      {
+        xDecompressCU(pCtu, uiIdx, uiNextDepth );
+      }
+
+      uiIdx += uiQNumParts;
+    }
+    return;
+  }
+
+  // Residual reconstruction
+  m_ppcYuvResi[uiDepth]->clear();
+
+  m_ppcCU[uiDepth]->copySubCU( pCtu, uiAbsPartIdx );
+
+  switch( m_ppcCU[uiDepth]->getPredictionMode(0) )
+  {
+    case MODE_INTER:
+      xReconInter( m_ppcCU[uiDepth], uiDepth );
+      break;
+    case MODE_INTRA:
+      xReconIntraQT( m_ppcCU[uiDepth], uiDepth );
+      break;
+    default:
+      assert(0);
+      break;
+  }
+
+  if ( m_ppcCU[uiDepth]->isLosslessCoded(0) && (m_ppcCU[uiDepth]->getIPCMFlag(0) == false))
+  {
+    xFillPCMBuffer(m_ppcCU[uiDepth], uiDepth);
+  }
+
+  xCopyToPic( m_ppcCU[uiDepth], pcPic, uiAbsPartIdx, uiDepth );
+}
+
 //! \}
