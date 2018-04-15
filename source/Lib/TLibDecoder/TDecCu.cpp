@@ -864,7 +864,21 @@ Void TDecCu::xFillPCMBuffer(TComDataCU* pCU, UInt depth)
 }
 
 
-/** 
+/**
+ * Define YUV colors for coloring CU borders
+ */
+static const Pel yuvColors[7][3] = {
+  {149,  43,  21}, // green
+  {225,   0, 148}, // yellow
+  { 76,  84, 255}, // red
+  { 29, 255, 107}, // blue
+  {105, 212, 234}, // magenta
+  {255, 128, 128}, // white
+  {  0, 128, 128}, // black
+};
+
+
+/**
  * Draw borders around every CU in a given CTU
  * \param pCtu [in/out] pointer to CTU data structure
  */
@@ -943,41 +957,21 @@ Void TDecCu::xDrawCUBorders( TComDataCU* const pCtu, const UInt uiAbsPartIdx, co
   }
 
   // Select border color based on coding mode
-  Pel borderColor[3] = { 255, 128, 128 }; // white
-  if ( pCtu->getSkipFlag(uiAbsPartIdx) )
-  {
-    // green
-    borderColor[0] = 149;
-    borderColor[1] = 43;
-    borderColor[2] = 21;
+  const Pel* borderColor;
+  if ( pCtu->isSkipped(uiAbsPartIdx)) {
+    borderColor = yuvColors[0]; // green
   }
-  else if ( pCtu->getCUTransquantBypass(uiAbsPartIdx) )
-  {
-    // yellow
-    borderColor[0] = 225;
-    borderColor[1] = 0;
-    borderColor[2] = 148;
+  else if (pCtu->getCUTransquantBypass(uiAbsPartIdx)) {
+    borderColor = yuvColors[1]; // yellow
   }
-  else if ( pCtu->isLosslessCoded(uiAbsPartIdx) )
-  {
-    // red
-    borderColor[0] = 76;
-    borderColor[1] = 84;
-    borderColor[2] = 255;
+  else if (pCtu->isLosslessCoded(uiAbsPartIdx)) {
+    borderColor = yuvColors[2]; // red
   }
-  else if ( pCtu->isInter(uiAbsPartIdx) )
-  {
-    // blue
-    borderColor[0] = 29;
-    borderColor[1] = 255;
-    borderColor[2] = 107;
+  else if (pCtu->isInter(uiAbsPartIdx)) {
+    borderColor = yuvColors[3]; // blue
   }
-  else /* if ( pCtu->isIntra(uiAbsPartIdx) ) */
-  {
-    // magenta
-    borderColor[0] = 105;
-    borderColor[1] = 212;
-    borderColor[2] = 234;
+  else /* if ( pCtu->isIntra(uiAbsPartIdx) ) */ {
+    borderColor = yuvColors[4]; // magenta
   }
 
   // Draw border
