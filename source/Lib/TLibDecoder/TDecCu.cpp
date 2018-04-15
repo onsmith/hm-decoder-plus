@@ -864,41 +864,62 @@ Void TDecCu::xFillPCMBuffer(TComDataCU* pCU, UInt depth)
 }
 
 
+/** 
+ * Draw borders around every CU in the CTU
+ * \param pCtu [in/out] pointer to CTU data structure
+ */
+Void TDecCu::drawCtuBorders( TComDataCU* pCtu )
+{
+  xDrawCUBorders( pCtu, 0, 0 );
+}
+
+
 /**
  * Recursively draw a border around every CU within a CTU. Choose border colors
  *   based on coding mode.
- * @param pCtu          The CTU to recurse through
- * @param uiAbsPartIdx  The absolute, z-order index of the top-left
- *                        minimum-sized partition (usually 4x4 pixels in size)
- *                        appearing in the current CU
- * @param uiDepth       The current CU depth for recursion
+ * \param pCtu          The CTU to recurse through
+ * \param uiAbsPartIdx  The index of the minimum-sized partition block located
+ *                        at the top left of the current CU. Minimum-sized
+ *                        partitions are typically 4x4 pixels in size, and are
+ *                        indexed in z-order starting at the top left of the
+ *                        CTU.
+ * \param uiDepth       The current CU depth for recursion
  */
-Void TDecCu::xDecompressCU( TComDataCU* pCtu, UInt uiAbsPartIdx,  UInt uiDepth )
+Void TDecCu::xDrawCUBorders( TComDataCU* const pCtu, const UInt uiAbsPartIdx, const UInt uiDepth )
 {
-        TComPic*  pcPic = pCtu->getPic();
-  const TComSPS  &sps   = *(pCtu->getSlice()->getSPS());
+        TComPic* const pcPic = pCtu->getPic();
+  const TComSPS* const sps   = pCtu->getSlice()->getSPS();
 
-  Bool bBoundary = false;
-  UInt uiLPelX   = pCtu->getCUPelX() + g_auiRasterToPelX[ g_auiZscanToRaster[uiAbsPartIdx] ];
-  UInt uiRPelX   = uiLPelX + (sps.getMaxCUWidth() >> uiDepth)  - 1;
-  UInt uiTPelY   = pCtu->getCUPelY() + g_auiRasterToPelY[ g_auiZscanToRaster[uiAbsPartIdx] ];
-  UInt uiBPelY   = uiTPelY + (sps.getMaxCUHeight() >> uiDepth) - 1;
+  // Width, height of this CU
+  UInt uiWidth  = sps->getMaxCUWidth()  >> uiDepth;
+  UInt uiHeight = sps->getMaxCUHeight() >> uiDepth;
 
-  Bool bBoundary = ( uiRPelX >= sps.getPicWidthInLumaSamples() || uiBPelY >= sps.getPicHeightInLumaSamples() );
+  // Left, right, top, and bottom boundaries of this CU, in pixels
+  UInt uiLPelX = pCtu->getCUPelX() + g_auiRasterToPelX[ g_auiZscanToRaster[ uiAbsPartIdx ] ];
+  UInt uiRPelX = uiLPelX + uiWidth - 1;
+  UInt uiTPelY = pCtu->getCUPelY() + g_auiRasterToPelY[ g_auiZscanToRaster[ uiAbsPartIdx ] ];
+  UInt uiBPelY = uiTPelY + uiHeight - 1;
 
-  if( uiDepth < pCtu->getDepth( uiAbsPartIdx ) && uiDepth < sps.getLog2DiffMaxMinCodingBlockSize() || bBoundary )
+  // Check if this CU overhangs the edge of the picture
+  Bool bIsBoundaryCU = ( uiRPelX >= sps->getPicWidthInLumaSamples() || uiBPelY >= sps->getPicHeightInLumaSamples() );
+
+  // Check if this CU has children in the quadtree (i.e. the quadtree splits)
+  Bool bIsParentCU = ( uiDepth < pCtu->getDepth( uiAbsPartIdx ) && uiDepth < sps->getLog2DiffMaxMinCodingBlockSize() );
+
+  // Recurse through the quadtree children of this CU
+  if ( bIsParentCU || bIsBoundaryCU )
   {
     UInt uiNextDepth = uiDepth + 1;
-    UInt uiQNumParts = pCtu->getTotalNumPart() >> (uiNextDepth<<1);
-    UInt uiIdx = uiAbsPartIdx;
+    UInt uiQNumParts = pCtu->getTotalNumPart() >> ( uiNextDepth << 1 );
+    UInt uiIdx       = uiAbsPartIdx;
     for ( UInt uiPartIdx = 0; uiPartIdx < 4; uiPartIdx++ )
     {
-      uiLPelX = pCtu->getCUPelX() + g_auiRasterToPelX[ g_auiZscanToRaster[uiIdx] ];
-      uiTPelY = pCtu->getCUPelY() + g_auiRasterToPelY[ g_auiZscanToRaster[uiIdx] ];
+      uiLPelX = pCtu->getCUPelX() + g_auiRasterToPelX[ g_auiZscanToRaster[ uiIdx ] ];
+      uiTPelY = pCtu->getCUPelY() + g_auiRasterToPelY[ g_auiZscanToRaster[ uiIdx ] ];
 
-      if( ( uiLPelX < sps.getPicWidthInLumaSamples() ) && ( uiTPelY < sps.getPicHeightInLumaSamples() ) )
+      if ( uiLPelX < sps->getPicWidthInLumaSamples() && uiTPelY < sps->getPicHeightInLumaSamples() )
       {
-        xDecompressCU(pCtu, uiIdx, uiNextDepth );
+        xDrawCUBorders( pCtu, uiIdx, uiNextDepth );
       }
 
       uiIdx += uiQNumParts;
@@ -906,30 +927,52 @@ Void TDecCu::xDecompressCU( TComDataCU* pCtu, UInt uiAbsPartIdx,  UInt uiDepth )
     return;
   }
 
-  // Residual reconstruction
-  m_ppcYuvResi[uiDepth]->clear();
-
-  m_ppcCU[uiDepth]->copySubCU( pCtu, uiAbsPartIdx );
-
-  switch( m_ppcCU[uiDepth]->getPredictionMode(0) )
+  // Select border color based on coding mode
+  Pel borderColor[3] = { 255, 128, 128 }; // white
+  if ( pCtu->getSkipFlag(uiAbsPartIdx) )
   {
-    case MODE_INTER:
-      xReconInter( m_ppcCU[uiDepth], uiDepth );
-      break;
-    case MODE_INTRA:
-      xReconIntraQT( m_ppcCU[uiDepth], uiDepth );
-      break;
-    default:
-      assert(0);
-      break;
+    // green
+    borderColor[0] = 149;
+    borderColor[1] = 43;
+    borderColor[2] = 21;
+  }
+  else if ( pCtu->getCUTransquantBypass(uiAbsPartIdx) )
+  {
+    // magenta
+    borderColor[0] = 105;
+    borderColor[1] = 212;
+    borderColor[2] = 234;
+  }
+  else if ( pCtu->isLosslessCoded(uiAbsPartIdx) )
+  {
+    // red
+    borderColor[0] = 76;
+    borderColor[1] = 84;
+    borderColor[2] = 255;
+  }
+  else if ( pCtu->getPredictionMode(uiAbsPartIdx) == MODE_INTER )
+  {
+    // blue
+    borderColor[0] = 29;
+    borderColor[1] = 255;
+    borderColor[2] = 107;
+  }
+  else /* if ( pCtu->getPredictionMode(uiAbsPartIdx) == MODE_INTRA ) */
+  {
+    // yellow
+    borderColor[0] = 225;
+    borderColor[1] = 0;
+    borderColor[2] = 148;
   }
 
-  if ( m_ppcCU[uiDepth]->isLosslessCoded(0) && (m_ppcCU[uiDepth]->getIPCMFlag(0) == false))
-  {
-    xFillPCMBuffer(m_ppcCU[uiDepth], uiDepth);
-  }
-
-  xCopyToPic( m_ppcCU[uiDepth], pcPic, uiAbsPartIdx, uiDepth );
+  // Draw border
+  pcPic->getPicYuvRec()->drawRectangle(
+    pCtu->getCtuRsAddr(),
+    uiAbsPartIdx,
+    uiWidth - 1,
+    uiHeight - 1,
+    borderColor
+  );
 }
 
 //! \}

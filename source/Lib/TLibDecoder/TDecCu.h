@@ -96,6 +96,9 @@ public:
   /// reconstruct Ctu information
   Void  decompressCtu           ( TComDataCU* pCtu );
 
+  /// draw borders around all CUs within a given CTU
+  Void  drawCtuBorders          ( TComDataCU* pCtu );
+
 protected:
 
   Void xDecodeCU                ( TComDataCU* const pcCU, const UInt uiAbsPartIdx, const UInt uiDepth, Bool &isLastCtuOfSliceSegment);
@@ -122,6 +125,8 @@ protected:
   Void setIsChromaQpAdjCoded    ( Bool b )                { m_IsChromaQpAdjCoded = b;           }
 
   Void xFillPCMBuffer           (TComDataCU* pCU, UInt depth);
+
+  Void xDrawCUBorders           ( TComDataCU* const pCtu, const UInt uiAbsPartIdx, const UInt uiDepth );
 };
 
 //! \}
