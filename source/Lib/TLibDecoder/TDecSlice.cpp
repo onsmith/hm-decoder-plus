@@ -227,7 +227,7 @@ Void TDecSlice::decompressSlice(TComInputBitstream** ppcSubstreams, TComPic* pcP
     g_bJustDoIt = g_bEncDecTraceDisable;
 #endif
 
-    m_pcCuDecoder->drawCtuBorders ( pCtu );
+    m_pcCuDecoder->drawCuBorders ( pCtu );
 
     //Store probabilities of second CTU in line into buffer
     if ( ctuXPosInCtus == tileXPosInCtus+1 && wavefrontsEnabled)

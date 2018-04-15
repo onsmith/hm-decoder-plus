@@ -334,21 +334,25 @@ Void TComPicYuv::dump (const std::string &fileName, const BitDepths &bitDepths, 
 
 
 
-
-Void TComPicYuv::drawRectangle( const UInt ctuRsIdx, const UInt uiAbsPartIdx, const UInt uiWidth, const UInt uiHeight, const Pel* const borderColor )
-{
+Void TComPicYuv::drawRectangle(
+  const UInt       ctuRsIdx,
+  const UInt       uiAbsPartIdx,
+  const UInt       uiWidth,
+  const UInt       uiHeight,
+  const Pel* const borderColor
+) {
   for (UInt comp = 0; comp < getNumberValidComponents(); comp++) {
     const ComponentID compId = static_cast<ComponentID>(comp);
 
     Pel *pPixel = getAddr(compId, ctuRsIdx, uiAbsPartIdx);
 
-    const UInt compWidth  = uiWidth  * getComponentScaleX(compId);
-    const UInt compHeight = uiHeight * getComponentScaleY(compId);
+    const UInt compWidth  = uiWidth  >> getComponentScaleX(compId);
+    const UInt compHeight = uiHeight >> getComponentScaleY(compId);
     const UInt compStride = getStride(compId);
 
     ::memset(pPixel, borderColor[comp], compWidth*sizeof(Pel));
 
-    for (UInt h = 2; h < uiHeight*getComponentScaleY(compId); h++) {
+    for (UInt h = 2; h < compHeight; h++) {
       pPixel += compStride;
       pPixel[0]           = borderColor[comp];
       pPixel[compWidth-1] = borderColor[comp];

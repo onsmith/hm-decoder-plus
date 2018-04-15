@@ -97,7 +97,7 @@ public:
   Void  decompressCtu           ( TComDataCU* pCtu );
 
   /// draw borders around all CUs within a given CTU
-  Void  drawCtuBorders          ( TComDataCU* pCtu );
+  Void  drawCuBorders          ( TComDataCU* pCtu );
 
 protected:
 

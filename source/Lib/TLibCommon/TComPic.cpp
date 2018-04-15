@@ -102,6 +102,10 @@ Void TComPic::create( const TComSPS &sps, const TComPPS &pps, const Bool bIsVirt
   }
 #endif
 
+  // Create an extra TComPicYuv to store the picture to be displayed
+  m_apcPicYuv[PIC_YUV_DSP] = new TComPicYuv;
+  m_apcPicYuv[PIC_YUV_DSP]->create( iWidth, iHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxDepth, true );
+
   // there are no SEI messages associated with this picture initially
   if (m_SEIs.size() > 0)
   {

@@ -865,11 +865,26 @@ Void TDecCu::xFillPCMBuffer(TComDataCU* pCU, UInt depth)
 
 
 /** 
- * Draw borders around every CU in the CTU
+ * Draw borders around every CU in a given CTU
  * \param pCtu [in/out] pointer to CTU data structure
  */
-Void TDecCu::drawCtuBorders( TComDataCU* pCtu )
+Void TDecCu::drawCuBorders( TComDataCU* pCtu )
 {
+  // Copy pixels from reconstruction frame to display frame
+  const UInt uiCtuRsAddr = pCtu->getCtuRsAddr();
+  TComPic* const pcPic = pCtu->getPic();
+  m_ppcYuvReco[0]->copyFromPicYuv(
+    pcPic->getPicYuvRec(),
+    uiCtuRsAddr,
+    0
+  );
+  m_ppcYuvReco[0]->copyToPicYuv(
+    pcPic->getPicYuvDsp(),
+    uiCtuRsAddr,
+    0
+  );
+
+  // Draw borders over display frame
   xDrawCUBorders( pCtu, 0, 0 );
 }
 
@@ -938,10 +953,10 @@ Void TDecCu::xDrawCUBorders( TComDataCU* const pCtu, const UInt uiAbsPartIdx, co
   }
   else if ( pCtu->getCUTransquantBypass(uiAbsPartIdx) )
   {
-    // magenta
-    borderColor[0] = 105;
-    borderColor[1] = 212;
-    borderColor[2] = 234;
+    // yellow
+    borderColor[0] = 225;
+    borderColor[1] = 0;
+    borderColor[2] = 148;
   }
   else if ( pCtu->isLosslessCoded(uiAbsPartIdx) )
   {
@@ -950,27 +965,27 @@ Void TDecCu::xDrawCUBorders( TComDataCU* const pCtu, const UInt uiAbsPartIdx, co
     borderColor[1] = 84;
     borderColor[2] = 255;
   }
-  else if ( pCtu->getPredictionMode(uiAbsPartIdx) == MODE_INTER )
+  else if ( pCtu->isInter(uiAbsPartIdx) )
   {
     // blue
     borderColor[0] = 29;
     borderColor[1] = 255;
     borderColor[2] = 107;
   }
-  else /* if ( pCtu->getPredictionMode(uiAbsPartIdx) == MODE_INTRA ) */
+  else /* if ( pCtu->isIntra(uiAbsPartIdx) ) */
   {
-    // yellow
-    borderColor[0] = 225;
-    borderColor[1] = 0;
-    borderColor[2] = 148;
+    // magenta
+    borderColor[0] = 105;
+    borderColor[1] = 212;
+    borderColor[2] = 234;
   }
 
   // Draw border
-  pcPic->getPicYuvRec()->drawRectangle(
+  pcPic->getPicYuvDsp()->drawRectangle(
     pCtu->getCtuRsAddr(),
     uiAbsPartIdx,
-    uiWidth - 1,
-    uiHeight - 1,
+    uiWidth,
+    uiHeight,
     borderColor
   );
 }
