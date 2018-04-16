@@ -142,6 +142,9 @@ public:
                                           , const Int bitDepths[MAX_NUM_CHANNEL_TYPE], const Bool bClipToBitDepths
                                           );
 
+  // Adds a scalar value to every pixel in the buffer
+  Void         addScalar                  ( const Pel scalar );
+
   // ------------------------------------------------------------------------------------------------------------------
   //  Access function for YUV buffer
   // ------------------------------------------------------------------------------------------------------------------

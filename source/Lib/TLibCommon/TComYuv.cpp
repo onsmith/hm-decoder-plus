@@ -454,4 +454,18 @@ Void TComYuv::removeHighFreq( const TComYuv* pcYuvSrc,
   }
 }
 
+
+
+Void TComYuv::addScalar(const Pel iScalar) {
+  for (Int comp = 0; comp < getNumberValidComponents(); comp++) {
+    ComponentID const compID    = ComponentID(comp);
+    UInt        const numPixels = getWidth(compID) * getHeight(compID);
+    Pel*        const pPixel    = getAddr(compID);
+
+    for (Int i = 0; i < numPixels; i++) {
+      pPixel[i] += iScalar;
+    }
+  }
+}
+
 //! \}

@@ -171,9 +171,6 @@ public:
 
   // Draw a rectangle
   Void          drawRectangle     ( const UInt ctuRsIdx, const UInt uiAbsPartIdx, const UInt uiWidth, const UInt uiHeight, const Pel* const borderColor );
-
-  // Add a value to every pixel in the frame
-  Void          addScalar         ( const Pel iScalar );
 };// END CLASS DEFINITION TComPicYuv
 
 

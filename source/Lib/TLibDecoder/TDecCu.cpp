@@ -759,6 +759,8 @@ Void TDecCu::xCopyToPic( TComDataCU* pcCU, TComPic* pcPic, UInt uiZorderIdx, UIn
   UInt uiCtuRsAddr = pcCU->getCtuRsAddr();
   
   m_ppcYuvReco[uiDepth]->copyToPicYuv  ( pcPic->getPicYuvRec (), uiCtuRsAddr, uiZorderIdx );
+
+  m_ppcYuvResi[uiDepth]->addScalar(128);
   m_ppcYuvResi[uiDepth]->copyToPicYuv  ( pcPic->getPicYuvDsp (), uiCtuRsAddr, uiZorderIdx );
 
   return;
