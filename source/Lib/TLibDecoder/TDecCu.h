@@ -58,8 +58,9 @@ class TDecCu
 {
 private:
   UInt                m_uiMaxDepth;       ///< max. number of depth
+  TComYuv**           m_ppcYuvPred;       ///< array of prediction buffer
   TComYuv**           m_ppcYuvResi;       ///< array of residual buffer
-  TComYuv**           m_ppcYuvReco;       ///< array of prediction & reconstruction buffer
+  TComYuv**           m_ppcYuvReco;       ///< array of reconstruction buffer
   TComDataCU**        m_ppcCU;            ///< CU data array
 
   // access channel

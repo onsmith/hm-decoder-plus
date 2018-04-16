@@ -80,7 +80,8 @@ Void TDecCu::init(TDecEntropy* pcEntropyDecoder, TComTrQuant* pcTrQuant, TComPre
 Void TDecCu::create( UInt uiMaxDepth, UInt uiMaxWidth, UInt uiMaxHeight, ChromaFormat chromaFormatIDC )
 {
   m_uiMaxDepth = uiMaxDepth+1;
-
+  
+  m_ppcYuvPred = new TComYuv*[m_uiMaxDepth-1];
   m_ppcYuvResi = new TComYuv*[m_uiMaxDepth-1];
   m_ppcYuvReco = new TComYuv*[m_uiMaxDepth-1];
   m_ppcCU      = new TComDataCU*[m_uiMaxDepth-1];
@@ -98,7 +99,8 @@ Void TDecCu::create( UInt uiMaxDepth, UInt uiMaxWidth, UInt uiMaxHeight, ChromaF
     // (Section 7.4.3.2: "The CVS shall not contain data that result in (Log2MinTrafoSize) MinTbLog2SizeY
     //                    greater than or equal to MinCbLog2SizeY")
     // TODO: tidy the array allocation given the above comment.
-
+    
+    m_ppcYuvPred[ui] = new TComYuv;    m_ppcYuvPred[ui]->create( uiWidth, uiHeight, chromaFormatIDC );
     m_ppcYuvResi[ui] = new TComYuv;    m_ppcYuvResi[ui]->create( uiWidth, uiHeight, chromaFormatIDC );
     m_ppcYuvReco[ui] = new TComYuv;    m_ppcYuvReco[ui]->create( uiWidth, uiHeight, chromaFormatIDC );
     m_ppcCU     [ui] = new TComDataCU; m_ppcCU     [ui]->create( chromaFormatIDC, uiNumPartitions, uiWidth, uiHeight, true, uiMaxWidth >> (m_uiMaxDepth - 1) );
@@ -120,11 +122,13 @@ Void TDecCu::destroy()
 {
   for ( UInt ui = 0; ui < m_uiMaxDepth-1; ui++ )
   {
+    m_ppcYuvPred[ui]->destroy(); delete m_ppcYuvPred[ui]; m_ppcYuvPred[ui] = NULL;
     m_ppcYuvResi[ui]->destroy(); delete m_ppcYuvResi[ui]; m_ppcYuvResi[ui] = NULL;
     m_ppcYuvReco[ui]->destroy(); delete m_ppcYuvReco[ui]; m_ppcYuvReco[ui] = NULL;
     m_ppcCU     [ui]->destroy(); delete m_ppcCU     [ui]; m_ppcCU     [ui] = NULL;
   }
-
+  
+  delete [] m_ppcYuvPred; m_ppcYuvPred = NULL;
   delete [] m_ppcYuvResi; m_ppcYuvResi = NULL;
   delete [] m_ppcYuvReco; m_ppcYuvReco = NULL;
   delete [] m_ppcCU     ; m_ppcCU      = NULL;
@@ -442,7 +446,7 @@ Void TDecCu::xReconInter( TComDataCU* pcCU, UInt uiDepth )
     m_pConformanceCheck->flagTMctsError("motion vector across tile boundaries");
   }
 #endif
-  m_pcPrediction->motionCompensation( pcCU, m_ppcYuvReco[uiDepth] );
+  m_pcPrediction->motionCompensation( pcCU, m_ppcYuvPred[uiDepth] );
 
 #if DEBUG_STRING
   const Int debugPredModeMask=DebugStringGetPredModeMask(MODE_INTER);
@@ -465,11 +469,11 @@ Void TDecCu::xReconInter( TComDataCU* pcCU, UInt uiDepth )
   // clip for only non-zero cbp case
   if  ( pcCU->getQtRootCbf( 0) )
   {
-    m_ppcYuvReco[uiDepth]->addClip( m_ppcYuvReco[uiDepth], m_ppcYuvResi[uiDepth], 0, pcCU->getWidth( 0 ), pcCU->getSlice()->getSPS()->getBitDepths() );
+    m_ppcYuvReco[uiDepth]->addClip( m_ppcYuvPred[uiDepth], m_ppcYuvResi[uiDepth], 0, pcCU->getWidth( 0 ), pcCU->getSlice()->getSPS()->getBitDepths() );
   }
   else
   {
-    m_ppcYuvReco[uiDepth]->copyPartToPartYuv( m_ppcYuvReco[uiDepth],0, pcCU->getWidth( 0 ),pcCU->getHeight( 0 ));
+    m_ppcYuvPred[uiDepth]->copyPartToPartYuv( m_ppcYuvReco[uiDepth],0, pcCU->getWidth( 0 ),pcCU->getHeight( 0 ));
   }
 #if DEBUG_STRING
   if (DebugOptionList::DebugString_Reco.getInt()&debugPredModeMask)
@@ -697,7 +701,7 @@ TDecCu::xReconIntraQT( TComDataCU* pcCU, UInt uiDepth )
 
     do
     {
-      xIntraRecQT( m_ppcYuvReco[uiDepth], m_ppcYuvReco[uiDepth], m_ppcYuvResi[uiDepth], chanType, tuRecurseWithPU );
+      xIntraRecQT( m_ppcYuvReco[uiDepth], m_ppcYuvPred[uiDepth], m_ppcYuvResi[uiDepth], chanType, tuRecurseWithPU );
     } while (tuRecurseWithPU.nextSection(tuRecurseCU));
   }
 }
@@ -753,8 +757,9 @@ TDecCu::xIntraRecQT(TComYuv*    pcRecoYuv,
 Void TDecCu::xCopyToPic( TComDataCU* pcCU, TComPic* pcPic, UInt uiZorderIdx, UInt uiDepth )
 {
   UInt uiCtuRsAddr = pcCU->getCtuRsAddr();
-
+  
   m_ppcYuvReco[uiDepth]->copyToPicYuv  ( pcPic->getPicYuvRec (), uiCtuRsAddr, uiZorderIdx );
+  m_ppcYuvResi[uiDepth]->copyToPicYuv  ( pcPic->getPicYuvDsp (), uiCtuRsAddr, uiZorderIdx );
 
   return;
 }
@@ -885,7 +890,7 @@ static const Pel yuvColors[7][3] = {
 Void TDecCu::drawCuBorders( TComDataCU* pCtu )
 {
   // Copy pixels from reconstruction frame to display frame
-  const UInt uiCtuRsAddr = pCtu->getCtuRsAddr();
+  /*const UInt uiCtuRsAddr = pCtu->getCtuRsAddr();
   TComPic* const pcPic = pCtu->getPic();
   m_ppcYuvReco[0]->copyFromPicYuv(
     pcPic->getPicYuvRec(),
@@ -896,7 +901,7 @@ Void TDecCu::drawCuBorders( TComDataCU* pCtu )
     pcPic->getPicYuvDsp(),
     uiCtuRsAddr,
     0
-  );
+  );*/
 
   // Draw borders over display frame
   xDrawCUBorders( pCtu, 0, 0 );
