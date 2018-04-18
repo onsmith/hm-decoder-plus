@@ -60,6 +60,11 @@ TComPic::TComPic()
   {
     m_apcPicYuv[i]      = NULL;
   }
+
+  for (int i=0; i<NUM_CU_MODES; i++)
+  {
+    m_ppuiCuModeCount[i] = NULL;
+  }
 }
 
 TComPic::~TComPic()
@@ -102,12 +107,18 @@ Void TComPic::create( const TComSPS &sps, const TComPPS &pps, const Bool bIsVirt
   }
 #endif
 
+  // Create an extra TComPicYuv to store the picture to be displayed
+  m_apcPicYuv[PIC_YUV_DSP] = new TComPicYuv;
+  m_apcPicYuv[PIC_YUV_DSP]->create( iWidth, iHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxDepth, true );
+
   // there are no SEI messages associated with this picture initially
   if (m_SEIs.size() > 0)
   {
     deleteSEIs (m_SEIs);
   }
   m_bUsedByCurr = false;
+
+  xCreateCUModeCount(uiMaxDepth);
 }
 
 #if REDUCED_ENCODER_MEMORY
@@ -201,6 +212,8 @@ Void TComPic::destroy()
   }
 
   deleteSEIs(m_SEIs);
+
+  xDestroyCUModeCount();
 }
 
 Void TComPic::compressMotion()
@@ -255,6 +268,133 @@ UInt TComPic::getSubstreamForCtuAddr(const UInt ctuAddr, const Bool bAddressInRa
     subStrm = 0;
   }
   return subStrm;
+}
+
+
+
+/**
+ * Gets the number of occurances within the picture of a given CU size and
+ *   coding mode.
+ * \param mode   The desired CU coding mode
+ * \param depth  The desired CU depth
+ * \return       The number of CUs in the picture of the given depth coded in
+ *               the given mode
+ */
+UInt TComPic::getCUModeCount(TComPic::CU_MODE_T mode, UInt depth) {
+  return m_ppuiCuModeCount[static_cast<int>(mode)][depth];
+}
+
+/**
+ * Traverses the CU quadtree to count the number of occurances of each CU size
+ *   and coding mode.
+ */
+Void TComPic::countCUModes() {
+  xResetCUModeCount();
+
+  for (int ctuRsAddr = 0; ctuRsAddr < getNumberOfCtusInFrame(); ctuRsAddr++) {
+    xCountCUModes(getCtu(ctuRsAddr), 0, 0);
+  }
+}
+
+/**
+ * Traverses the CU quadtree to count the number of occurances of each CU size
+ *   and coding mode.
+ * \param ctu          Pointer to the CTU structure
+ * \param cuPartZAddr  Z-scan ordered index of the minimum partition (usually
+ *                     4x4) located in the top left position of the current CU
+ * \param depth        Depth of the current CU
+ */
+Void TComPic::xCountCUModes(TComDataCU* ctu, UInt cuPartZAddr, UInt depth) {
+  const TComSPS* sps = ctu->getSlice()->getSPS();
+
+  UInt cuPelWidth  = sps->getMaxCUWidth()  >> depth;
+  UInt cuPelHeight = sps->getMaxCUHeight() >> depth;
+
+  UInt cuLPelX = ctu->getCUPelX() + g_auiRasterToPelX[g_auiZscanToRaster[cuPartZAddr]];
+  UInt cuRPelX = cuLPelX + cuPelWidth - 1;
+  UInt cuTPelY = ctu->getCUPelY() + g_auiRasterToPelY[g_auiZscanToRaster[cuPartZAddr]];
+  UInt cuBPelY = cuTPelY + cuPelHeight - 1;
+
+  Bool isParentCu = (
+    depth < ctu->getDepth(cuPartZAddr) &&
+    depth < sps->getLog2DiffMaxMinCodingBlockSize()
+  );
+
+  Bool isBoundaryCu = (
+    cuRPelX >= sps->getPicWidthInLumaSamples() ||
+    cuBPelY >= sps->getPicHeightInLumaSamples()
+  );
+
+  if (isParentCu || isBoundaryCu) {
+    UInt childCuDepth    = depth + 1;
+    UInt partsPerChildCu = ctu->getTotalNumPart() >> (childCuDepth << 1);
+    UInt childCuPartZAddr = cuPartZAddr;
+
+    for (int i = 0; i < 4; i++) {
+      UInt childCuLPelX = ctu->getCUPelX() + g_auiRasterToPelX[g_auiZscanToRaster[childCuPartZAddr]];
+      UInt childCuTPelY = ctu->getCUPelY() + g_auiRasterToPelY[g_auiZscanToRaster[childCuPartZAddr]];
+
+      Bool isChildCuInsideFrame = (
+        childCuLPelX < sps->getPicWidthInLumaSamples() &&
+        childCuTPelY < sps->getPicHeightInLumaSamples()
+      );
+
+      if (isChildCuInsideFrame) {
+        xCountCUModes(ctu, childCuPartZAddr, childCuDepth);
+      }
+
+      childCuPartZAddr += partsPerChildCu;
+    }
+
+    return;
+  }
+
+  if (ctu->isSkipped(cuPartZAddr)) {
+    m_ppuiCuModeCount[static_cast<int>(CU_MODE_SKIP)][depth]++;
+  }
+  else if (ctu->getIPCMFlag(cuPartZAddr)) {
+    m_ppuiCuModeCount[static_cast<int>(CU_MODE_IPCM)][depth]++;
+  }
+  else if (ctu->isLosslessCoded(cuPartZAddr)) {
+    m_ppuiCuModeCount[static_cast<int>(CU_MODE_LOSSLESS)][depth]++;
+  }
+  else if (ctu->isInter(cuPartZAddr)) {
+    m_ppuiCuModeCount[static_cast<int>(CU_MODE_INTER)][depth]++;
+  }
+  else /* if (ctu->isIntra(cuPartZAddr)) */ {
+    m_ppuiCuModeCount[static_cast<int>(CU_MODE_INTRA)][depth]++;
+  }
+}
+
+/**
+ * Initializes the m_ppuiCuModeCount data structure, which counts the number of
+ *   occurances of each CU size and coding mode in the picture.
+ * \param depth  The max allowed CU depth
+ */
+Void TComPic::xCreateCUModeCount(UInt depth) {
+  for (int i = 0; i < NUM_CU_MODES; i++) {
+    m_ppuiCuModeCount[i] = new UInt[depth]();
+  }
+}
+
+/**
+ * Destroys the m_ppuiCuModeCount data structure.
+ */
+Void TComPic::xDestroyCUModeCount() {
+  for (int i = 0; i < NUM_CU_MODES; i++) {
+    delete[] m_ppuiCuModeCount[i];
+    m_ppuiCuModeCount[i] = NULL;
+  }
+}
+
+/**
+ * Resets the m_ppuiCuModeCount data structure by setting all counts to zero.
+ */
+Void TComPic::xResetCUModeCount() {
+  UInt maxDepth = getPicSym()->getSPS().getLog2DiffMaxMinCodingBlockSize();
+  for (int i = 0; i < NUM_CU_MODES; i++) {
+    ::memset(m_ppuiCuModeCount[i], 0, maxDepth*sizeof(UInt));
+  }
 }
 
 

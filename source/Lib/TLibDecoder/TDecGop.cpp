@@ -189,6 +189,21 @@ Void TDecGop::filterPicture(TComPic* pcPic)
   }
 
   printf("\n");
+  
+  const UInt maxDepth = pcPic->getPicSym()->getSPS().getMaxTotalCUDepth();
+  const UInt maxWidth = pcPic->getPicSym()->getSPS().getMaxCUWidth();
+  printf("            Inter     Intra   Skipped  Lossless     I-PCM\n");
+  pcPic->countCUModes();
+  for (Int depth = 0; depth < maxDepth; depth++) {
+    printf("%2d CUs: ", maxWidth >> depth);
+    printf("%9d ",  pcPic->getCUModeCount(TComPic::CU_MODE_INTER,    depth));
+    printf("%9d ",  pcPic->getCUModeCount(TComPic::CU_MODE_INTRA,    depth));
+    printf("%9d ",  pcPic->getCUModeCount(TComPic::CU_MODE_SKIP,     depth));
+    printf("%9d ",  pcPic->getCUModeCount(TComPic::CU_MODE_LOSSLESS, depth));
+    printf("%9d\n", pcPic->getCUModeCount(TComPic::CU_MODE_IPCM,     depth));
+  }
+
+  printf("\n");
 
   pcPic->setOutputMark(pcPic->getSlice(0)->getPicOutputFlag() ? true : false);
   pcPic->setReconMark(true);

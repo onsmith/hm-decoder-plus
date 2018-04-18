@@ -454,4 +454,41 @@ Void TComYuv::removeHighFreq( const TComYuv* pcYuvSrc,
   }
 }
 
+
+
+Void TComYuv::addScalar(const Pel iScalar) {
+  for (Int comp = 0; comp < getNumberValidComponents(); comp++) {
+    ComponentID const compID    = ComponentID(comp);
+    UInt        const numPixels = getWidth(compID) * getHeight(compID);
+    Pel*        const pPixel    = getAddr(compID);
+
+    for (Int i = 0; i < numPixels; i++) {
+      pPixel[i] += iScalar;
+    }
+  }
+}
+
+
+Void TComYuv::drawBorder(const Pel* const borderColor) {
+  for (Int comp = 0; comp < getNumberValidComponents(); comp++) {
+    ComponentID const compID = ComponentID(comp);
+    UInt        const width  = getWidth(compID);
+    UInt        const height = getHeight(compID);
+    UInt        const stride = getStride(compID);
+    Pel         const color  = borderColor[comp];
+    Pel*              pPixel = getAddr(compID);
+
+    ::memset(pPixel, color, width*sizeof(Pel));
+    pPixel += stride;
+
+    for (Int i = 2; i < height; i++) {
+      pPixel[0]       = color;
+      pPixel[width-1] = color;
+      pPixel += stride;
+    }
+
+    ::memset(pPixel, color, width*sizeof(Pel));
+  }
+}
+
 //! \}

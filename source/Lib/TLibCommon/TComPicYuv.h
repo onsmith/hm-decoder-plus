@@ -168,6 +168,9 @@ public:
 
   // Set border extension flag
   Void          setBorderExtension(Bool b) { m_bIsBorderExtended = b; }
+
+  // Draw a rectangle
+  Void          drawRectangle     ( const UInt ctuRsIdx, const UInt uiAbsPartIdx, const UInt uiWidth, const UInt uiHeight, const Pel* const borderColor );
 };// END CLASS DEFINITION TComPicYuv
 
 
