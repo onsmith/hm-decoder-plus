@@ -56,6 +56,15 @@
 class TComPic
 {
 public:
+  typedef enum {
+    CU_MODE_INTER,
+    CU_MODE_INTRA,
+    CU_MODE_SKIP,
+    CU_MODE_LOSSLESS,
+    CU_MODE_IPCM,
+  } CU_MODE_T;
+  static const UInt NUM_CU_MODES = 5;
+
   typedef enum { PIC_YUV_ORG=0, PIC_YUV_REC=1, PIC_YUV_TRUE_ORG=2, PIC_YUV_DSP=3, NUM_PIC_YUV=4 } PIC_YUV_T;
      // TRUE_ORG is the input file without any pre-encoder colour space conversion (but with possible bit depth increment)
   TComPicYuv*   getPicYuvTrueOrg()        { return  m_apcPicYuv[PIC_YUV_TRUE_ORG]; }
@@ -73,6 +82,8 @@ private:
   Bool                  m_bNeededForOutput;
   UInt                  m_uiCurrSliceIdx;         // Index of current slice
   Bool                  m_bCheckLTMSB;
+
+  UInt*                 m_ppuiCuModeCount[NUM_CU_MODES];
 
   Bool                  m_isTop;
   Bool                  m_isField;
@@ -178,6 +189,16 @@ public:
    * return the current list of SEI messages associated with this picture.
    * Pointer is valid until this->destroy() is called */
   const SEIMessages& getSEIs() const { return m_SEIs; }
+
+  /* CU coding mode statistics calculation and management */
+  Void countCUModes();
+  UInt getCUModeCount(CU_MODE_T mode, UInt depth);
+
+private:
+  Void xCreateCUModeCount(UInt depth);
+  Void xCountCUModes(TComDataCU* pCtu, UInt partZIndex, UInt depth);
+  Void xDestroyCUModeCount();
+  Void xResetCUModeCount();
 };// END CLASS DEFINITION TComPic
 
 //! \}

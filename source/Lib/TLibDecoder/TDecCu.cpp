@@ -772,19 +772,19 @@ static const Pel yuvColors[7][3] = {
  * Local (static) function that picks a yuv color based on a CU's coding mode
  */
 static const Pel* getCodingModeColor(const TComDataCU* const pCu) {
-  if ( pCu->isSkipped(0)) {
+  if (pCu->isSkipped(0)) {
     return yuvColors[0]; // green
   }
-  else if (pCu->getCUTransquantBypass(0)) {
-    return yuvColors[1]; // yellow
+  else if (pCu->getIPCMFlag(0)) {
+    return yuvColors[2]; // red
   }
   else if (pCu->isLosslessCoded(0)) {
-    return yuvColors[2]; // red
+    return yuvColors[1]; // yellow
   }
   else if (pCu->isInter(0)) {
     return yuvColors[3]; // blue
   }
-  else /* if ( pCu->isIntra(0) ) */ {
+  else /* if (pCu->isIntra(0)) */ {
     return yuvColors[4]; // magenta
   }
 }
