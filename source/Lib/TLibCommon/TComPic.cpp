@@ -60,6 +60,11 @@ TComPic::TComPic()
   {
     m_apcPicYuv[i]      = NULL;
   }
+
+  for (int i=0; i<NUM_CU_MODES; i++)
+  {
+    m_ppuiCuModeCount[i] = NULL;
+  }
 }
 
 TComPic::~TComPic()
@@ -270,6 +275,10 @@ UInt TComPic::getSubstreamForCtuAddr(const UInt ctuAddr, const Bool bAddressInRa
 /**
  * Gets the number of occurances within the picture of a given CU size and
  *   coding mode.
+ * \param mode   The desired CU coding mode
+ * \param depth  The desired CU depth
+ * \return       The number of CUs in the picture of the given depth coded in
+ *               the given mode
  */
 UInt TComPic::getCUModeCount(TComPic::CU_MODE_T mode, UInt depth) {
   return m_ppuiCuModeCount[static_cast<int>(mode)][depth];
@@ -290,6 +299,10 @@ Void TComPic::countCUModes() {
 /**
  * Traverses the CU quadtree to count the number of occurances of each CU size
  *   and coding mode.
+ * \param ctu          Pointer to the CTU structure
+ * \param cuPartZAddr  Z-scan ordered index of the minimum partition (usually
+ *                     4x4) located in the top left position of the current CU
+ * \param depth        Depth of the current CU
  */
 Void TComPic::xCountCUModes(TComDataCU* ctu, UInt cuPartZAddr, UInt depth) {
   const TComSPS* sps = ctu->getSlice()->getSPS();
@@ -365,21 +378,22 @@ Void TComPic::xCreateCUModeCount(UInt depth) {
 }
 
 /**
- * Resets the m_ppuiCuModeCount data structure by setting all counts to zero.
- */
-Void TComPic::xResetCUModeCount() {
-  UInt maxDepth = getPicSym()->getSPS->getLog2DiffMaxMinCodingBlockSize();
-  for (int i = 0; i < NUM_CU_MODES; i++) {
-    ::memset(m_ppuiCuModeCount[i], 0, maxDepth*sizeof(UInt));
-  }
-}
-
-/**
  * Destroys the m_ppuiCuModeCount data structure.
  */
 Void TComPic::xDestroyCUModeCount() {
   for (int i = 0; i < NUM_CU_MODES; i++) {
     delete[] m_ppuiCuModeCount[i];
+    m_ppuiCuModeCount[i] = NULL;
+  }
+}
+
+/**
+ * Resets the m_ppuiCuModeCount data structure by setting all counts to zero.
+ */
+Void TComPic::xResetCUModeCount() {
+  UInt maxDepth = getPicSym()->getSPS().getLog2DiffMaxMinCodingBlockSize();
+  for (int i = 0; i < NUM_CU_MODES; i++) {
+    ::memset(m_ppuiCuModeCount[i], 0, maxDepth*sizeof(UInt));
   }
 }
 
