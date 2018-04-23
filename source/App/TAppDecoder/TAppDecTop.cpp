@@ -88,6 +88,23 @@ Void TAppDecTop::decode()
   Int                 poc;
   TComList<TComPic*>* pcListPic = NULL;
 
+  switch(m_outputSignal) {
+  case OUTPUT_SIGNAL_PREDICTION:
+    m_cTDecTop.setPicDisplaySignal(TComPic::DISP_SIGNAL_PRED);
+    break;
+  case OUTPUT_SIGNAL_RESIDUAL:
+    m_cTDecTop.setPicDisplaySignal(TComPic::DISP_SIGNAL_RESI);
+    break;
+  case OUTPUT_SIGNAL_UNFILTERED:
+    m_cTDecTop.setPicDisplaySignal(TComPic::DISP_SIGNAL_RECO);
+    break;
+  case OUTPUT_SIGNAL_RECONSTRUCTION:
+    m_cTDecTop.setPicDisplaySignal(TComPic::DISP_SIGNAL_NONE);
+    break;
+  default:
+    assert(0);
+  }
+
   ifstream bitstreamFile(m_bitstreamFileName.c_str(), ifstream::in | ifstream::binary);
   if (!bitstreamFile)
   {
@@ -267,6 +284,7 @@ Void TAppDecTop::xCreateDecLib()
 {
   // create decoder class
   m_cTDecTop.create();
+
 }
 
 Void TAppDecTop::xDestroyDecLib()
@@ -453,7 +471,21 @@ Void TAppDecTop::xWriteOutput( TComList<TComPic*>* pcListPic, UInt tId )
           const Window &conf    = pcPic->getConformanceWindow();
           const Window  defDisp = m_respectDefDispWindow ? pcPic->getDefDisplayWindow() : Window();
 
-          m_cTVideoIOYuvReconFile.write( pcPic->getPicYuvDsp(),
+          TComPicYuv* displayPic = pcPic->getPicYuvDsp();
+
+          if (m_outputSignal == OUTPUT_SIGNAL_RECONSTRUCTION) {
+            if (m_willOutlineCus) {
+              pcPic->getPicYuvRec()->copyToPic(pcPic->getPicYuvDsp());
+            } else {
+              displayPic = pcPic->getPicYuvRec();
+            }
+          }
+
+          if (m_willOutlineCus) {
+            pcPic->drawCUBorders();
+          }
+
+          m_cTVideoIOYuvReconFile.write( displayPic,
                                          m_outputColourSpaceConvert,
                                          conf.getWindowLeftOffset() + defDisp.getWindowLeftOffset(),
                                          conf.getWindowRightOffset() + defDisp.getWindowRightOffset(),
@@ -576,7 +608,21 @@ Void TAppDecTop::xFlushOutput( TComList<TComPic*>* pcListPic )
           const Window &conf    = pcPic->getConformanceWindow();
           const Window  defDisp = m_respectDefDispWindow ? pcPic->getDefDisplayWindow() : Window();
 
-          m_cTVideoIOYuvReconFile.write( pcPic->getPicYuvDsp(),
+          TComPicYuv* displayPic = pcPic->getPicYuvDsp();
+
+          if (m_outputSignal == OUTPUT_SIGNAL_RECONSTRUCTION) {
+            if (m_willOutlineCus) {
+              pcPic->getPicYuvRec()->copyToPic(pcPic->getPicYuvDsp());
+            } else {
+              displayPic = pcPic->getPicYuvRec();
+            }
+          }
+
+          if (m_willOutlineCus) {
+            pcPic->drawCUBorders();
+          }
+
+          m_cTVideoIOYuvReconFile.write( displayPic,
                                          m_outputColourSpaceConvert,
                                          conf.getWindowLeftOffset() + defDisp.getWindowLeftOffset(),
                                          conf.getWindowRightOffset() + defDisp.getWindowRightOffset(),

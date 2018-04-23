@@ -793,12 +793,22 @@ static const Pel* getCodingModeColor(const TComDataCU* const pCu) {
 Void TDecCu::xCopyToPic( TComDataCU* pcCU, TComPic* pcPic, UInt uiZorderIdx, UInt uiDepth )
 {
   UInt uiCtuRsAddr = pcCU->getCtuRsAddr();
-  
+
   m_ppcYuvReco[uiDepth]->copyToPicYuv  ( pcPic->getPicYuvRec (), uiCtuRsAddr, uiZorderIdx );
 
-  m_ppcYuvResi[uiDepth]->addScalar(128);
-  m_ppcYuvResi[uiDepth]->drawBorder(getCodingModeColor(pcCU));
-  m_ppcYuvResi[uiDepth]->copyToPicYuv(pcPic->getPicYuvDsp(), uiCtuRsAddr, uiZorderIdx);
+  // Copy correct CU signal to display frame
+  switch(pcPic->getDisplaySignal()) {
+  case (TComPic::DISP_SIGNAL_PRED):
+    m_ppcYuvPred[uiDepth]->copyToPicYuv(pcPic->getPicYuvDsp(), uiCtuRsAddr, uiZorderIdx);
+    break;
+  case (TComPic::DISP_SIGNAL_RESI):
+    m_ppcYuvResi[uiDepth]->addScalar(128);
+    m_ppcYuvResi[uiDepth]->copyToPicYuv(pcPic->getPicYuvDsp(), uiCtuRsAddr, uiZorderIdx);
+    break;
+  case (TComPic::DISP_SIGNAL_RECO):
+    m_ppcYuvReco[uiDepth]->copyToPicYuv(pcPic->getPicYuvDsp(), uiCtuRsAddr, uiZorderIdx);
+    break;
+  }
 
   return;
 }

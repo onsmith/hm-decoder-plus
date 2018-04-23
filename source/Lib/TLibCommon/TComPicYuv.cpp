@@ -351,14 +351,14 @@ Void TComPicYuv::drawRectangle(
     const UInt compStride = getStride(compId);
 
     ::memset(pPixel, borderColor[comp], compWidth*sizeof(Pel));
+    pPixel += compStride;
 
-    for (UInt h = 2; h < compHeight; h++) {
-      pPixel += compStride;
+    for (UInt i = 2; i < compHeight; i++) {
       pPixel[0]           = borderColor[comp];
       pPixel[compWidth-1] = borderColor[comp];
+      pPixel += compStride;
     }
 
-    pPixel += compStride;
     ::memset(pPixel, borderColor[comp], compWidth*sizeof(Pel));
   }
 }

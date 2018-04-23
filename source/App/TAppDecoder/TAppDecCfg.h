@@ -55,12 +55,24 @@
 /// Decoder configuration class
 class TAppDecCfg
 {
+public:
+  typedef enum
+  {
+    OUTPUT_SIGNAL_PREDICTION,     // Prediction signal only
+    OUTPUT_SIGNAL_RESIDUAL,       // Residual signal only
+    OUTPUT_SIGNAL_UNFILTERED,     // Unfiltered sum of prediction and residual
+    OUTPUT_SIGNAL_RECONSTRUCTION, // Complete reconstruction after filtering
+  } OUTPUT_SIGNAL_T;
+
 protected:
   std::string   m_bitstreamFileName;                    ///< input bitstream file name
   std::string   m_reconFileName;                        ///< output reconstruction file name
   Int           m_iSkipFrame;                           ///< counter for frames prior to the random access point to skip
   Int           m_outputBitDepth[MAX_NUM_CHANNEL_TYPE]; ///< bit depth used for writing output
   InputColourSpaceConversion m_outputColourSpaceConvert;
+  
+  OUTPUT_SIGNAL_T m_outputSignal;                     ///< reconstructed picture signal to be written as output
+  Bool            m_willOutlineCus;                   ///< enable(true)/disable(false) outlining CUs in the output frames
 
   Int           m_iMaxTemporalLayer;                  ///< maximum temporal layer to be decoded
   Int           m_decodedPictureHashSEIEnabled;       ///< Checksum(3)/CRC(2)/MD5(1)/disable(0) acting on decoded picture hash SEI message
@@ -84,6 +96,8 @@ public:
   , m_iSkipFrame(0)
   // m_outputBitDepth array initialised below
   , m_outputColourSpaceConvert(IPCOLOURSPACE_UNCHANGED)
+  , m_outputSignal(OUTPUT_SIGNAL_RECONSTRUCTION)
+  , m_willOutlineCus(false)
   , m_iMaxTemporalLayer(-1)
   , m_decodedPictureHashSEIEnabled(0)
   , m_decodedNoDisplaySEIEnabled(false)

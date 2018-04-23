@@ -55,6 +55,7 @@ TComPic::TComPic()
 , m_bNeededForOutput                      (false)
 , m_uiCurrSliceIdx                        (0)
 , m_bCheckLTMSB                           (false)
+, m_displaySignal                         (DISP_SIGNAL_NONE)
 {
   for(UInt i=0; i<NUM_PIC_YUV; i++)
   {
@@ -395,6 +396,111 @@ Void TComPic::xResetCUModeCount() {
   for (int i = 0; i < NUM_CU_MODES; i++) {
     ::memset(m_ppuiCuModeCount[i], 0, maxDepth*sizeof(UInt));
   }
+}
+
+
+/**
+ * Draws borders around each CU in the picture.
+ */
+Void TComPic::drawCUBorders() {
+  for (int ctuRsAddr = 0; ctuRsAddr < getNumberOfCtusInFrame(); ctuRsAddr++) {
+    xDrawCUBorders(getCtu(ctuRsAddr), 0, 0);
+  }
+}
+
+/**
+ * YUV colors for drawing CU borders
+ */
+static const Pel yuvColors[7][3] = {
+  {149,  43,  21}, // green
+  {225,   0, 148}, // yellow
+  { 76,  84, 255}, // red
+  { 29, 255, 107}, // blue
+  {105, 212, 234}, // magenta
+  {255, 128, 128}, // white
+  {  0, 128, 128}, // black
+};
+
+/**
+ * Local (static) function that picks a yuv color based on a CU's coding mode
+ */
+static const Pel* getCodingModeColor(const TComDataCU* const ctu, UInt partZAddr) {
+  if (ctu->isSkipped(partZAddr)) {
+    return yuvColors[0]; // green
+  }
+  else if (ctu->getIPCMFlag(partZAddr)) {
+    return yuvColors[2]; // red
+  }
+  else if (ctu->isLosslessCoded(partZAddr)) {
+    return yuvColors[1]; // yellow
+  }
+  else if (ctu->isInter(partZAddr)) {
+    return yuvColors[3]; // blue
+  }
+  else /* if (ctu->isIntra(partZAddr)) */ {
+    return yuvColors[4]; // magenta
+  }
+}
+
+/**
+ * Traverses the CU quadtree to draw boarders around each CU in the picture.
+ * \param ctu          Pointer to the CTU structure
+ * \param cuPartZAddr  Z-scan ordered index of the minimum partition (usually
+ *                     4x4) located in the top left position of the current CU
+ * \param depth        Depth of the current CU
+ */
+Void TComPic::xDrawCUBorders(TComDataCU* ctu, UInt cuPartZAddr, UInt depth) {
+  const TComSPS* sps = ctu->getSlice()->getSPS();
+
+  UInt cuPelWidth  = sps->getMaxCUWidth()  >> depth;
+  UInt cuPelHeight = sps->getMaxCUHeight() >> depth;
+
+  UInt cuLPelX = ctu->getCUPelX() + g_auiRasterToPelX[g_auiZscanToRaster[cuPartZAddr]];
+  UInt cuRPelX = cuLPelX + cuPelWidth - 1;
+  UInt cuTPelY = ctu->getCUPelY() + g_auiRasterToPelY[g_auiZscanToRaster[cuPartZAddr]];
+  UInt cuBPelY = cuTPelY + cuPelHeight - 1;
+
+  Bool isParentCu = (
+    depth < ctu->getDepth(cuPartZAddr) &&
+    depth < sps->getLog2DiffMaxMinCodingBlockSize()
+  );
+
+  Bool isBoundaryCu = (
+    cuRPelX >= sps->getPicWidthInLumaSamples() ||
+    cuBPelY >= sps->getPicHeightInLumaSamples()
+  );
+
+  if (isParentCu || isBoundaryCu) {
+    UInt childCuDepth    = depth + 1;
+    UInt partsPerChildCu = ctu->getTotalNumPart() >> (childCuDepth << 1);
+    UInt childCuPartZAddr = cuPartZAddr;
+
+    for (int i = 0; i < 4; i++) {
+      UInt childCuLPelX = ctu->getCUPelX() + g_auiRasterToPelX[g_auiZscanToRaster[childCuPartZAddr]];
+      UInt childCuTPelY = ctu->getCUPelY() + g_auiRasterToPelY[g_auiZscanToRaster[childCuPartZAddr]];
+
+      Bool isChildCuInsideFrame = (
+        childCuLPelX < sps->getPicWidthInLumaSamples() &&
+        childCuTPelY < sps->getPicHeightInLumaSamples()
+      );
+
+      if (isChildCuInsideFrame) {
+        xCountCUModes(ctu, childCuPartZAddr, childCuDepth);
+      }
+
+      childCuPartZAddr += partsPerChildCu;
+    }
+
+    return;
+  }
+
+  getPicYuvDsp()->drawRectangle(
+    ctu->getCtuRsAddr(),
+    cuPartZAddr,
+    cuPelWidth,
+    cuPelHeight,
+    getCodingModeColor(ctu, cuPartZAddr)
+  );
 }
 
 

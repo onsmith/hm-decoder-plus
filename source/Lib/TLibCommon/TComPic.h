@@ -65,6 +65,13 @@ public:
   } CU_MODE_T;
   static const UInt NUM_CU_MODES = 5;
 
+  typedef enum {
+    DISP_SIGNAL_PRED,
+    DISP_SIGNAL_RESI,
+    DISP_SIGNAL_RECO,
+    DISP_SIGNAL_NONE,
+  } DISP_SIGNAL_T;
+
   typedef enum { PIC_YUV_ORG=0, PIC_YUV_REC=1, PIC_YUV_TRUE_ORG=2, PIC_YUV_DSP=3, NUM_PIC_YUV=4 } PIC_YUV_T;
      // TRUE_ORG is the input file without any pre-encoder colour space conversion (but with possible bit depth increment)
   TComPicYuv*   getPicYuvTrueOrg()        { return  m_apcPicYuv[PIC_YUV_TRUE_ORG]; }
@@ -87,6 +94,8 @@ private:
 
   Bool                  m_isTop;
   Bool                  m_isField;
+
+  DISP_SIGNAL_T         m_displaySignal;
 
   std::vector<std::vector<TComDataCU*> > m_vSliceCUDataLink;
 
@@ -194,11 +203,19 @@ public:
   Void countCUModes();
   UInt getCUModeCount(CU_MODE_T mode, UInt depth);
 
+  /* Display signal management */
+  Void          setDisplaySignal(DISP_SIGNAL_T ds) { m_displaySignal = ds;   };
+  DISP_SIGNAL_T getDisplaySignal() const           { return m_displaySignal; };
+
+  /* Draw borders around each CU in the display TComPicYuv */
+  Void          drawCUBorders();
+
 private:
   Void xCreateCUModeCount(UInt depth);
   Void xCountCUModes(TComDataCU* pCtu, UInt partZIndex, UInt depth);
   Void xDestroyCUModeCount();
   Void xResetCUModeCount();
+  Void xDrawCUBorders(TComDataCU* pCtu, UInt partZIndex, UInt depth);
 };// END CLASS DEFINITION TComPic
 
 //! \}

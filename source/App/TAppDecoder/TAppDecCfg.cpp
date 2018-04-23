@@ -63,7 +63,9 @@ Bool TAppDecCfg::parseCfg( Int argc, TChar* argv[] )
   Bool do_help = false;
   string cfg_TargetDecLayerIdSetFile;
   string outputColourSpaceConvert;
+  string outputSignal;
   Int warnUnknowParameter = 0;
+
 
   po::Options opts;
   opts.addOptions()
@@ -73,6 +75,8 @@ Bool TAppDecCfg::parseCfg( Int argc, TChar* argv[] )
   ("BitstreamFile,b",           m_bitstreamFileName,                   string(""), "bitstream input file name")
   ("ReconFile,o",               m_reconFileName,                       string(""), "reconstructed YUV output file name\n"
                                                                                    "YUV writing is skipped if omitted")
+  ("OutputSignal,r",            outputSignal,                          string(""), "Reconstructed signal for YUV output. Permitted values are (prediction, residual, unfiltered, reconstruction). Default reconstruction.")
+  ("OutlineCus",                m_willOutlineCus,                      false,      "Outline CUs with borders colored based on coding mode")
   ("WarnUnknowParameter,w",     warnUnknowParameter,                                  0, "warn for unknown configuration parameters instead of failing")
   ("SkipFrames,s",              m_iSkipFrame,                          0,          "number of frames to skip before random access")
   ("OutputBitDepth,d",          m_outputBitDepth[CHANNEL_TYPE_LUMA],   0,          "bit depth of YUV output luma component (default: use 0 for native depth)")
@@ -176,6 +180,19 @@ Bool TAppDecCfg::parseCfg( Int argc, TChar* argv[] )
     {
       fprintf(stderr, "File %s could not be opened. Using all LayerIds as default.\n", cfg_TargetDecLayerIdSetFile.c_str() );
     }
+  }
+
+  if (outputSignal == "prediction") {
+    m_outputSignal = OUTPUT_SIGNAL_PREDICTION;
+  } else if (outputSignal == "residual") {
+    m_outputSignal = OUTPUT_SIGNAL_RESIDUAL;
+  } else if (outputSignal == "unfiltered") {
+    m_outputSignal = OUTPUT_SIGNAL_UNFILTERED;
+  } else if (outputSignal == "reconstruction" || outputSignal == "") {
+    m_outputSignal = OUTPUT_SIGNAL_RECONSTRUCTION;
+  } else {
+    fprintf(stderr, "Unknown output picture signal, aborting");
+    return false;
   }
 
   return true;
