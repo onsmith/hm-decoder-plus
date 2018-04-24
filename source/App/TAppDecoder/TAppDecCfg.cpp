@@ -76,7 +76,7 @@ Bool TAppDecCfg::parseCfg( Int argc, TChar* argv[] )
   ("ReconFile,o",               m_reconFileName,                       string(""), "reconstructed YUV output file name\n"
                                                                                    "YUV writing is skipped if omitted")
   ("OutputSignal,r",            outputSignal,                          string(""), "Reconstructed signal for YUV output. Permitted values are (prediction, residual, unfiltered, reconstruction). Default reconstruction.")
-  ("OutlineCus",                m_willOutlineCus,                      false,      "Outline CUs with borders colored based on coding mode")
+  ("OutlineCUs",                m_willOutlineCus,                      false,      "Outline CUs with borders colored based on coding mode")
   ("WarnUnknowParameter,w",     warnUnknowParameter,                                  0, "warn for unknown configuration parameters instead of failing")
   ("SkipFrames,s",              m_iSkipFrame,                          0,          "number of frames to skip before random access")
   ("OutputBitDepth,d",          m_outputBitDepth[CHANNEL_TYPE_LUMA],   0,          "bit depth of YUV output luma component (default: use 0 for native depth)")

@@ -485,7 +485,7 @@ Void TComPic::xDrawCUBorders(TComDataCU* ctu, UInt cuPartZAddr, UInt depth) {
       );
 
       if (isChildCuInsideFrame) {
-        xCountCUModes(ctu, childCuPartZAddr, childCuDepth);
+        xDrawCUBorders(ctu, childCuPartZAddr, childCuDepth);
       }
 
       childCuPartZAddr += partsPerChildCu;

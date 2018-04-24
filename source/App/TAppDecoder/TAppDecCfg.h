@@ -56,8 +56,7 @@
 class TAppDecCfg
 {
 public:
-  typedef enum
-  {
+  typedef enum {
     OUTPUT_SIGNAL_PREDICTION,     // Prediction signal only
     OUTPUT_SIGNAL_RESIDUAL,       // Residual signal only
     OUTPUT_SIGNAL_UNFILTERED,     // Unfiltered sum of prediction and residual
