@@ -55,7 +55,6 @@ TComPic::TComPic()
 , m_bNeededForOutput                      (false)
 , m_uiCurrSliceIdx                        (0)
 , m_bCheckLTMSB                           (false)
-, m_displaySignal                         (DISP_SIGNAL_NONE)
 {
   for(UInt i=0; i<NUM_PIC_YUV; i++)
   {
@@ -409,7 +408,7 @@ Void TComPic::drawCUBorders() {
 }
 
 /**
- * YUV colors for drawing CU borders
+ * YUV colors for drawing CU borders.
  */
 static const Pel yuvColors[7][3] = {
   {149,  43,  21}, // green
@@ -422,7 +421,7 @@ static const Pel yuvColors[7][3] = {
 };
 
 /**
- * Local (static) function that picks a yuv color based on a CU's coding mode
+ * Local (static) function that picks a yuv color based on a CU's coding mode.
  */
 static const Pel* getCodingModeColor(const TComDataCU* const ctu, UInt partZAddr) {
   if (ctu->isSkipped(partZAddr)) {

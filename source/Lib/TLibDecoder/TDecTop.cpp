@@ -66,7 +66,6 @@ TDecTop::TDecTop()
   , m_pcPic(NULL)
   , m_prevPOC(MAX_INT)
   , m_prevTid0POC(0)
-  , m_picDisplaySignal(TComPic::DISP_SIGNAL_NONE)
   , m_bFirstSliceInPicture(true)
   , m_bFirstSliceInSequence(true)
   , m_prevSliceSkipped(false)
@@ -168,7 +167,6 @@ Void TDecTop::xGetNewPicBuffer ( const TComSPS &sps, const TComPPS &pps, TComPic
   if (m_cListPic.size() < (UInt)m_iMaxRefPicNum)
   {
     rpcPic = new TComPic();
-    rpcPic->setDisplaySignal(m_picDisplaySignal);
 
 #if REDUCED_ENCODER_MEMORY
     rpcPic->create ( sps, pps, false, true);
@@ -208,7 +206,6 @@ Void TDecTop::xGetNewPicBuffer ( const TComSPS &sps, const TComPPS &pps, TComPic
     //There is no room for this picture, either because of faulty encoder or dropped NAL. Extend the buffer.
     m_iMaxRefPicNum++;
     rpcPic = new TComPic();
-    rpcPic->setDisplaySignal(m_picDisplaySignal);
     m_cListPic.pushBack( rpcPic );
   }
   rpcPic->destroy();
@@ -996,5 +993,11 @@ Bool TDecTop::isRandomAccessSkipPicture(Int& iSkipFrame,  Int& iPOCLastDisplay)
   // if we reach here, then the picture is not skipped.
   return false;
 }
+
+
+TDecCu* TDecTop::getCuDecoder() {
+  return &m_cCuDecoder;
+}
+
 
 //! \}

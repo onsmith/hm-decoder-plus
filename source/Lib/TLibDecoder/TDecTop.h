@@ -78,8 +78,6 @@ private:
 
   SEIMessages             m_SEIs; ///< List of SEI messages that have been received before the first slice and between slices, excluding prefix SEIs...
 
-  TComPic::DISP_SIGNAL_T  m_picDisplaySignal; ///< Decoded display signal
-
   // functional classes
   TComPrediction          m_cPrediction;
   TComTrQuant             m_cTrQuant;
@@ -137,8 +135,6 @@ public:
   Bool  decode(InputNALUnit& nalu, Int& iSkipFrame, Int& iPOCLastDisplay);
   Void  deletePicBuffer();
 
-  Void  setPicDisplaySignal(TComPic::DISP_SIGNAL_T ds) { m_picDisplaySignal = ds; };
-
   Void  executeLoopFilters(Int& poc, TComList<TComPic*>*& rpcListPic);
   Void  checkNoOutputPriorPics (TComList<TComPic*>* rpcListPic);
 
@@ -152,6 +148,8 @@ public:
 #endif
   Void  setDecodedSEIMessageOutputStream(std::ostream *pOpStream) { m_pDecodedSEIOutputStream = pOpStream; }
   UInt  getNumberOfChecksumErrorsDetected() const { return m_cGopDecoder.getNumberOfChecksumErrorsDetected(); }
+
+  TDecCu* getCuDecoder();
 
 protected:
   Void  xGetNewPicBuffer  (const TComSPS &sps, const TComPPS &pps, TComPic*& rpcPic, const UInt temporalLayer);

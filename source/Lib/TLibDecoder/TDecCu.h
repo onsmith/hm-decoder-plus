@@ -56,6 +56,14 @@
 /// CU decoder class
 class TDecCu
 {
+public:
+  typedef enum {
+    YUV_SIGNAL_PREDICTION,
+    YUV_SIGNAL_RESIDUAL,
+    YUV_SIGNAL_RECONSTRUCTION,
+    YUV_SIGNAL_OTHER,
+  } YUV_SIGNAL_T;
+
 private:
   UInt                m_uiMaxDepth;       ///< max. number of depth
   TComYuv**           m_ppcYuvPred;       ///< array of prediction buffer
@@ -73,6 +81,9 @@ private:
 
   Bool                m_bDecodeDQP;
   Bool                m_IsChromaQpAdjCoded;
+
+  YUV_SIGNAL_T        m_displaySignal;    ///< signal to extract to the display
+                                          ///< frame during decoding
 
 public:
   TDecCu();
@@ -96,6 +107,10 @@ public:
 
   /// reconstruct Ctu information
   Void  decompressCtu           ( TComDataCU* pCtu );
+
+  /// get/set display signal
+  YUV_SIGNAL_T getDisplaySignal () const;
+  Void         setDisplaySignal ( YUV_SIGNAL_T displaySignal );
 
 protected:
 

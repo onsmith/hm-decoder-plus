@@ -47,6 +47,7 @@
 // ====================================================================================================================
 
 TDecCu::TDecCu()
+  : m_displaySignal(YUV_SIGNAL_OTHER)
 {
   m_ppcYuvResi = NULL;
   m_ppcYuvReco = NULL;
@@ -755,41 +756,6 @@ TDecCu::xIntraRecQT(TComYuv*    pcRecoYuv,
 }
 
 
-/**
- * Define YUV colors for coloring CU borders
- */
-static const Pel yuvColors[7][3] = {
-  {149,  43,  21}, // green
-  {225,   0, 148}, // yellow
-  { 76,  84, 255}, // red
-  { 29, 255, 107}, // blue
-  {105, 212, 234}, // magenta
-  {255, 128, 128}, // white
-  {  0, 128, 128}, // black
-};
-
-/**
- * Local (static) function that picks a yuv color based on a CU's coding mode
- */
-static const Pel* getCodingModeColor(const TComDataCU* const pCu) {
-  if (pCu->isSkipped(0)) {
-    return yuvColors[0]; // green
-  }
-  else if (pCu->getIPCMFlag(0)) {
-    return yuvColors[2]; // red
-  }
-  else if (pCu->isLosslessCoded(0)) {
-    return yuvColors[1]; // yellow
-  }
-  else if (pCu->isInter(0)) {
-    return yuvColors[3]; // blue
-  }
-  else /* if (pCu->isIntra(0)) */ {
-    return yuvColors[4]; // magenta
-  }
-}
-
-
 Void TDecCu::xCopyToPic( TComDataCU* pcCU, TComPic* pcPic, UInt uiZorderIdx, UInt uiDepth )
 {
   UInt uiCtuRsAddr = pcCU->getCtuRsAddr();
@@ -797,15 +763,15 @@ Void TDecCu::xCopyToPic( TComDataCU* pcCU, TComPic* pcPic, UInt uiZorderIdx, UIn
   m_ppcYuvReco[uiDepth]->copyToPicYuv  ( pcPic->getPicYuvRec (), uiCtuRsAddr, uiZorderIdx );
 
   // Copy correct CU signal to display frame
-  switch(pcPic->getDisplaySignal()) {
-  case (TComPic::DISP_SIGNAL_PRED):
+  switch(m_displaySignal) {
+  case (YUV_SIGNAL_PREDICTION):
     m_ppcYuvPred[uiDepth]->copyToPicYuv(pcPic->getPicYuvDsp(), uiCtuRsAddr, uiZorderIdx);
     break;
-  case (TComPic::DISP_SIGNAL_RESI):
+  case (YUV_SIGNAL_RESIDUAL):
     m_ppcYuvResi[uiDepth]->addScalar(128);
     m_ppcYuvResi[uiDepth]->copyToPicYuv(pcPic->getPicYuvDsp(), uiCtuRsAddr, uiZorderIdx);
     break;
-  case (TComPic::DISP_SIGNAL_RECO):
+  case (YUV_SIGNAL_RECONSTRUCTION):
     m_ppcYuvReco[uiDepth]->copyToPicYuv(pcPic->getPicYuvDsp(), uiCtuRsAddr, uiZorderIdx);
     break;
   }
@@ -916,5 +882,16 @@ Void TDecCu::xFillPCMBuffer(TComDataCU* pCU, UInt depth)
     }
   }
 }
+
+
+TDecCu::YUV_SIGNAL_T TDecCu::getDisplaySignal() const {
+  return m_displaySignal;
+}
+
+
+Void TDecCu::setDisplaySignal(YUV_SIGNAL_T displaySignal) {
+  m_displaySignal = displaySignal;
+}
+
 
 //! \}

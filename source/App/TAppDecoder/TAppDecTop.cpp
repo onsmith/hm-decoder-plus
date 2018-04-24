@@ -90,16 +90,16 @@ Void TAppDecTop::decode()
 
   switch(m_outputSignal) {
   case OUTPUT_SIGNAL_PREDICTION:
-    m_cTDecTop.setPicDisplaySignal(TComPic::DISP_SIGNAL_PRED);
+    m_cTDecTop.getCuDecoder()->setDisplaySignal(TDecCu::YUV_SIGNAL_PREDICTION);
     break;
   case OUTPUT_SIGNAL_RESIDUAL:
-    m_cTDecTop.setPicDisplaySignal(TComPic::DISP_SIGNAL_RESI);
+    m_cTDecTop.getCuDecoder()->setDisplaySignal(TDecCu::YUV_SIGNAL_RESIDUAL);
     break;
   case OUTPUT_SIGNAL_UNFILTERED:
-    m_cTDecTop.setPicDisplaySignal(TComPic::DISP_SIGNAL_RECO);
+    m_cTDecTop.getCuDecoder()->setDisplaySignal(TDecCu::YUV_SIGNAL_RECONSTRUCTION);
     break;
   case OUTPUT_SIGNAL_RECONSTRUCTION:
-    m_cTDecTop.setPicDisplaySignal(TComPic::DISP_SIGNAL_NONE);
+    m_cTDecTop.getCuDecoder()->setDisplaySignal(TDecCu::YUV_SIGNAL_OTHER);
     break;
   default:
     assert(0);
